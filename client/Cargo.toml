@@ -1,0 +1,39 @@
+[package]
+name = "rustcord-client"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "rustcord-desktop"
+path = "src/main.rs"
+
+[features]
+desktop = ["eframe/x11", "eframe/wayland"]
+
+[dependencies]
+eframe = { version = "0.37", default-features = false, features = ["glow", "default_fonts"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+ureq = { version = "2", features = ["json"] }
+
+[target.'cfg(target_os = "android")'.dependencies]
+eframe = { version = "0.37", default-features = false, features = ["glow", "default_fonts", "android-native-activity"] }
+android-activity = { version = "0.6", features = ["native-activity"] }
+
+[package.metadata.android]
+package = "dev.rustcord.client"
+build_targets = ["aarch64-linux-android"]
+
+[package.metadata.android.sdk]
+min_sdk_version = 26
+target_sdk_version = 34
+
+[package.metadata.android.application]
+label = "Rustcord"
+uses_cleartext_traffic = true
+
+[[package.metadata.android.uses_permission]]
+name = "android.permission.INTERNET"

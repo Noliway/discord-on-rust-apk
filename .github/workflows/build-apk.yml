@@ -1,0 +1,61 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install NDK and platform
+        run: |
+          sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;26.1.10909125"
+          echo "ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/26.1.10909125" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125" >> "$GITHUB_ENV"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-apk
+        run: cargo install cargo-apk --locked
+
+      - name: Build APK
+        working-directory: client
+        run: cargo apk build --release --lib
+
+      - name: Locate APK
+        run: |
+          APK=$(find target -name "*.apk" | head -n1)
+          echo "Found: $APK"
+          mkdir -p dist && cp "$APK" dist/rustcord.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rustcord-apk
+          path: dist/rustcord.apk
+
+      - name: Publish release
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest build
+          files: dist/rustcord.apk
