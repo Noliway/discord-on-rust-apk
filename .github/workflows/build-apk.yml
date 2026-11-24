@@ -37,8 +37,17 @@ jobs:
       - name: Install cargo-apk
         run: cargo install cargo-apk --locked
 
+      - name: Create signing key
+        run: |
+          keytool -genkey -v -keystore "$RUNNER_TEMP/rustcord.keystore" -storepass android \
+            -alias rustcord -keypass android -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Rustcord,O=Rustcord,C=US"
+
       - name: Build APK
         working-directory: client
+        env:
+          CARGO_APK_RELEASE_KEYSTORE: ${{ runner.temp }}/rustcord.keystore
+          CARGO_APK_RELEASE_KEYSTORE_PASSWORD: android
         run: cargo apk build --release --lib
 
       - name: Locate APK
